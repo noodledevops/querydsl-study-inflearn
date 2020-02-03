@@ -262,4 +262,37 @@ public class QuerydslBasicTest {
 
     }
 
+    @Test
+    public void paging1() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)  // 1 스킵
+                .limit(2)   // 2 개만 가져오고!
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void paging2() {
+        QueryResults<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)  // 1 스킵
+                .limit(2)   // 2 개만 가져오고!
+                .fetchResults();
+        // 카운트 쿼리와 컨텐츠 쿼리 두번 나옴!
+        // 실무에서는 이를 못쓸때 있다
+        // 분리해서 해야할 경우가 있다
+        // 컨텐츠쿼리는 복잡한데
+        // 카운트는 단순한 경우 있음
+        // 이럴때는 깔끔하게 분리하자! 
+
+        assertThat(result.getTotal()).isEqualTo(4);
+        assertThat(result.getLimit()).isEqualTo(2);
+        assertThat(result.getOffset()).isEqualTo(1);
+        assertThat(result.getResults().size()).isEqualTo(2);
+    }
+
 }
