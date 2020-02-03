@@ -14,6 +14,7 @@ import study.querdsl.entity.Team;
 import javax.persistence.EntityManager;
 
 import static org.assertj.core.api.Assertions.*;
+import static study.querdsl.entity.QMember.*;
 
 @SpringBootTest
 @Transactional
@@ -24,6 +25,9 @@ public class QuerydslBasicTest {
 
     @BeforeEach
     public void before() {
+        // queryFactory 이와 같이 초기화
+        queryFactory = new JPAQueryFactory(em);
+
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
 
@@ -46,6 +50,7 @@ public class QuerydslBasicTest {
         em.flush();
         // 영속성컨텍스트 완전 초기화
         em.clear();
+
     }
 
     @Test
@@ -107,7 +112,8 @@ public class QuerydslBasicTest {
         // 매번 할때마다 em 넣어도 무방!
         // 필드로 뺴서 매 처리마다 em 주입 무관
         // 알아서 처리 해줌!
-        queryFactory = new JPAQueryFactory(em);
+//        queryFactory = new JPAQueryFactory(em); // 이것도 before 에다가 해준다
+        // 실제 서버 처리에서는 어떻게? - epro 코드를 보자!
         QMember m = new QMember("m");//어떤 q 맴버인지 구분할려고?, 값을 하나 넣어줘야한다고 함
         Member findMember = queryFactory
                 .select(m)
@@ -117,4 +123,41 @@ public class QuerydslBasicTest {
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
+
+    // 위 테스트 코드 줄이는 버전
+    @Test
+    public void startQuerydsl3() {
+        // 매번 할때마다 em 넣어도 무방!
+        // 필드로 뺴서 매 처리마다 em 주입 무관
+        // 알아서 처리 해줌!
+
+//        QMember m = QMember.member;//어떤 q 맴버인지 구분할려고?, 값을 하나 넣어줘야한다고 함
+        // 위 변수 보다 아래처럼 Q 클래스에 public static final 변수 직접 임포트하여 쓰는 것을 권장한다!!!
+        Member findMember = queryFactory
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        // querydsl은 결과적으로 빌더를 통해 jpql 만들어 주는 것
+        // 이상태로는 jpql 보고 싶을때는 yml 편집
+        /*
+            select
+                member1
+            from
+                Member member1 -- alias member1 포인트!!!
+            where
+                member1.username = ?1
+         */// 아래와 같이 변수 m1 대입시
+        // QMember m1 = QMember.member;
+        // Member findMember = queryFactory
+        //        .select(m1)
+        //        .from(m1)
+        //        .where(member.username.eq("member1"))
+        //        .fetchOne();
+        // 같은 테이블을 조인하는 경우 이런 경우에 한하여는 이런식으로 변수 직접 생성하여 주입하는 쪽으로 함
+        // 그렇지 않은 경우에는 구지 쓸 일이 없다
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
 }
