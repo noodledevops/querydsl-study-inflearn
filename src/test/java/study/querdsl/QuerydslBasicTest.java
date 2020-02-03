@@ -1,5 +1,6 @@
 package study.querdsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,8 @@ import study.querdsl.entity.QMember;
 import study.querdsl.entity.Team;
 
 import javax.persistence.EntityManager;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static study.querdsl.entity.QMember.*;
@@ -160,4 +163,74 @@ public class QuerydslBasicTest {
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
+    @Test
+    public void search1() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1").and(member.age.eq(10)))
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void search2() {
+        // 체이닝 방식으로 검색조건 연결하여 사용
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.like("member").and(member.age.between(10, 30))) // 연쇄 체인 방식
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam() {
+        // 체이닝 방식으로 사용
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                        // 매게변수 방식으로 and 연결
+                        // 콤마 파라미터 ... 넘기는 방식이므로 and 방식으로 연결해준다
+                        member.username.like("member"),
+                        member.age.between(10, 30) // , null // 널을 무시할 수 있다 <- 동적 쿼리 만들때 상당히 간편!
+                )
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void resultFetch() {
+        // 리스트로 조회
+//        List<Member> fetch = queryFactory
+//            .selectFrom(member)
+//            .fetch();
+//
+//        Member fetchOne = queryFactory
+//                .selectFrom(QMember.member)
+//                .fetchOne();
+//
+//        Member fetchFirst = queryFactory
+//                .selectFrom(member)
+//                .fetchFirst();
+
+        // 페이징 - 실무 조언!
+        // 페이징이 복잡해지면
+        // 성능떄문에 토탈 가져오는 것과
+        // 실제 내용 가져오는 것
+        // 다를때 있다
+        // 이걸 쓰면 안되고
+        // 그때는 쿼리 두방을 따로 보내야함!!
+//        QueryResults<Member> results = queryFactory
+//                .selectFrom(member)
+//                .fetchResults();
+//
+//        results.getTotal(); // 페이징 내용
+//        List<Member> content = results.getResults(); // 결과 내용 불러오기
+
+        // 카운트만 가져오는 것
+        long count = queryFactory
+                .selectFrom(member)
+                .fetchCount();
+
+
+    }
 }
